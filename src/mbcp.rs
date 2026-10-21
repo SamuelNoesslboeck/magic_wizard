@@ -1,7 +1,7 @@
 #[derive(Clone, Debug, Default)]
-pub struct MBCPButtonState(pub u8);
+pub struct MBCPButtonStates(pub u8);
 
-impl MBCPButtonState {
+impl MBCPButtonStates {
     pub fn a1_active(&self) -> bool {
         self.0 & 0x01 != 0
     }
@@ -29,7 +29,7 @@ impl MBCPButtonState {
 
 #[derive(Clone, Debug, Default)]
 pub struct MBCPState {
-    pub buttons : MBCPButtonState,
+    pub buttons : MBCPButtonStates,
     pub re_rel_val : i8,
     pub js_x_val : i8,
     pub js_y_val : i8
