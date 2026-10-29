@@ -1,3 +1,6 @@
+#![doc = include_str!("../README.md")]
+#![deny(missing_docs)]
+
 use core::time::Duration;
 use std::net::{ToSocketAddrs, UdpSocket};
 use std::io;
@@ -7,7 +10,13 @@ pub use mbcp::*;
 
 use crate::MBCPEvent::{ButtonPress, ButtonRelease, EncoderChange, JoystickChange};
 
+/// The default address used within the MBCP
+pub const MBCP_DEF_ADDRESS : &'static str = "0.0.0.0:22609";
+
+/// ID enum for each button of the MagicBox
 #[derive(Clone, Copy, Debug)]
+#[allow(non_camel_case_types)]
+#[allow(missing_docs)]
 pub enum ButtonID {
     A1,
     A2,
@@ -17,13 +26,19 @@ pub enum ButtonID {
     JS_SW
 }
 
+/// Events that can be triggered by the devices of the MagicBox
 pub enum MBCPEvent {
+    /// Button with the ID [ButtonID] has been pressed
     ButtonPress(ButtonID),
+    /// Button with the ID [ButtonID] has been released
     ButtonRelease(ButtonID),
+    /// The encoder has seen a relative change `i8`, and is currently at the position `i32`
     EncoderChange(i32, i8),
+    /// The joystick has seen a change in position (second tuple `(x, y)`), from the old position (first tuple `(x, y)`)
     JoystickChange((i8, i8), (i8, i8))
 }
 
+/// The state machine evaluates changes in the MagicBox state and fires events accordingly
 pub struct StateMachine<F : FnMut(&MBCPState, MBCPEvent)> {
     handler : F,
     encoder_counter : i32,
@@ -32,6 +47,8 @@ pub struct StateMachine<F : FnMut(&MBCPState, MBCPEvent)> {
 }
 
 impl<F : FnMut(&MBCPState, MBCPEvent)> StateMachine<F> {
+    /// Create a new state machine, binding it to the given address on your local machine  
+    /// On incoming messages, the given handler function is called
     pub fn new<A : ToSocketAddrs>(bind_address : A, handler : F) -> std::io::Result<Self> {
         let socket = UdpSocket::bind(bind_address)?;
         socket.set_read_timeout(Some(Duration::from_millis(200)))?;
@@ -43,7 +60,8 @@ impl<F : FnMut(&MBCPState, MBCPEvent)> StateMachine<F> {
             socket
         })
     }
-
+    
+    /// Evalues a new incoming state and fires events accordingly
     pub fn eval(&mut self, new_state : MBCPState) {
         // --- A1 ---
         if !self.old_state.buttons.a1_active() && new_state.buttons.a1_active() {
@@ -113,10 +131,14 @@ impl<F : FnMut(&MBCPState, MBCPEvent)> StateMachine<F> {
         self.old_state = new_state;
     }
     
+    /// Puts the state machine in the timeout state, meaning the MagicBox has not sent a state for a previously set amount of time  
+    /// This ensures that devices are released and not held indefinetly when their release event fails to be delivered
     pub fn timeout(&mut self) {
         self.eval(MBCPState::default());
     }
 
+    /// Starts the blocking message loop that handles incoming state messages from the MagicBox  
+    /// These messages are evaluated and the connected events created
     pub fn start_msg_loop(&mut self) -> std::io::Result<()> {
         let mut buf = [0; 64];
         

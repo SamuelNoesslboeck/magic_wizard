@@ -1,7 +1,10 @@
 [package]
 name = "magic_wizard"
-version = "0.1.0"
+version = "1.0.0"
 edition = "2024"
+description = "API create for UDP connections with the MagicBox controller"
+authors = [ "Samuel Nösslböck <samuel.noesslboeck@gmail.com>" ]
+license = "MIT"
 
 [dependencies]
 
